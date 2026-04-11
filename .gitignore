@@ -1,2 +1,26 @@
 
 NOTE.MD
+.DS_Store
+node_modules/
+dist/
+coverage/
+*.log
+.env
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.bak
+*.tmp
+*.pid
+*.seed
+*.pid.lock
+*.log
+*.gz
+*.zip
+*.tar
+*.rar
+*.7z
