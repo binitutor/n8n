@@ -25,3 +25,7 @@ coverage/
 *.tar
 *.rar
 *.7z
+
+# projects
+newsroom/latest_post.json
+
