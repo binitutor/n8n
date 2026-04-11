@@ -8,11 +8,11 @@ handlePostRequest($latestPostFile);
 
 $latestPostData = readLatestPostData($latestPostFile);
 
-$latestPostDisplay = $latestPostData
+$latestPostDisplay = !empty($latestPostData)
 	? json_encode($latestPostData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)
 	: "No POST request received yet.";
-$latestPostStatus = isset($latestPostData["receivedAt"])
-	? "Last POST at " . $latestPostData["receivedAt"]
+$latestPostStatus = !empty($latestPostData)
+	? count($latestPostData) . " POST(s), last at " . ($latestPostData[0]["receivedAt"] ?? "unknown")
 	: "No POST received yet";
 
 if (($_GET["latestPost"] ?? "") === "1") {
@@ -165,8 +165,15 @@ if (($_GET["latestPost"] ?? "") === "1") {
 						<span id="latestPostStatus" class="text-muted small"><?php echo htmlspecialchars($latestPostStatus, ENT_QUOTES, "UTF-8"); ?></span>
 					</div>
 
-					<div class="response-box p-3">
+					<div class="response-box p-3" style="max-height: 320px;">
 						<pre id="latestPostPre" class="response-pre"><?php echo htmlspecialchars($latestPostDisplay, ENT_QUOTES, "UTF-8"); ?></pre>
+					</div>
+
+					<div class="mt-3">
+						<button id="previewPostsBtn" type="button" class="btn btn-sm btn-outline-secondary w-100" disabled>
+							<i class="fa-solid fa-table-list me-1"></i>
+							Preview Posts
+						</button>
 					</div>
 				</div>
 			</div>
@@ -216,5 +223,23 @@ if (($_GET["latestPost"] ?? "") === "1") {
 	<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 	<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 	<script src="script.js"></script>
+
+	<!-- POST preview modal -->
+	<div class="modal fade" id="postPreviewModal" tabindex="-1" aria-labelledby="postPreviewModalLabel" aria-hidden="true">
+		<div class="modal-dialog modal-lg modal-dialog-scrollable">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title" id="postPreviewModalLabel">
+						<i class="fa-solid fa-paper-plane me-2" style="color: var(--primary);"></i>
+						Received POST Items
+					</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				</div>
+				<div class="modal-body">
+					<div id="postPreviewList" class="row g-3"></div>
+				</div>
+			</div>
+		</div>
+	</div>
 </body>
 </html>

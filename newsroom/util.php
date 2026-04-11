@@ -35,7 +35,12 @@ function readLatestPostData(string $latestPostFile): ?array
 		return null;
 	}
 
-	return $decoded;
+	// Backward compat: old format stored a single object; new format stores an array of objects.
+	if (!empty($decoded) && !isset($decoded[0])) {
+		return [$decoded];
+	}
+
+	return empty($decoded) ? null : $decoded;
 }
 
 function handlePostRequest(string $latestPostFile): void
@@ -72,7 +77,35 @@ function handlePostRequest(string $latestPostFile): void
 		"rawBody" => $rawBody,
 	];
 
-	file_put_contents($latestPostFile, json_encode($receivedRecord, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+	// Use an exclusive lock so concurrent POST requests don't overwrite each other.
+	$fp = fopen($latestPostFile, "c+");
+	if ($fp === false) {
+		http_response_code(500);
+		echo json_encode(["error" => "Could not open storage file"]);
+		exit;
+	}
+
+	flock($fp, LOCK_EX);
+
+	$existingRecords = [];
+	$stored = stream_get_contents($fp);
+	if (is_string($stored) && $stored !== "") {
+		$decoded = json_decode($stored, true);
+		if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+			// Handle both old single-object format and current array format.
+			$existingRecords = (isset($decoded[0]) || empty($decoded)) ? $decoded : [$decoded];
+		}
+	}
+
+	array_unshift($existingRecords, $receivedRecord);
+	$newJson = json_encode($existingRecords, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+
+	ftruncate($fp, 0);
+	rewind($fp);
+	fwrite($fp, $newJson);
+	fflush($fp);
+	flock($fp, LOCK_UN);
+	fclose($fp);
 
 	header("Content-Type: application/json; charset=utf-8");
 	http_response_code(200);
@@ -83,14 +116,14 @@ function handlePostRequest(string $latestPostFile): void
 	exit;
 }
 
-function respondLatestPostJson(string $status, string $display, ?array $latestPostData): void
+function respondLatestPostJson(string $status, string $display, ?array $allPosts): void
 {
 	header("Content-Type: application/json; charset=utf-8");
 	http_response_code(200);
 	echo json_encode([
 		"status" => $status,
 		"display" => $display,
-		"data" => $latestPostData,
+		"posts" => $allPosts ?? [],
 	], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
 	exit;
 }

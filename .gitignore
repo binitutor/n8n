@@ -4,6 +4,7 @@ NOTE.MD
 node_modules/
 dist/
 coverage/
+*.txt
 *.log
 .env
 .idea/

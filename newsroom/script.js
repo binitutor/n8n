@@ -357,9 +357,55 @@ function setupLazySections() {
 	sections.forEach(section => observer.observe(section));
 }
 
+const POST_MONITOR_URL = "http://localhost:8888/practice/n8n/newsroom/";
+const previewPostsBtn = document.getElementById("previewPostsBtn");
+let cachedPosts = [];
+
+function renderPostPreviewModal() {
+	const postPreviewList = document.getElementById("postPreviewList");
+	if (cachedPosts.length === 0) {
+		postPreviewList.innerHTML = "<p class=\"text-muted\">No POST items available.</p>";
+		return;
+	}
+	postPreviewList.innerHTML = cachedPosts.map((post) => {
+		const payload = post.payload || {};
+		const title = payload.title || "(no title)";
+		const author = payload.author || "unknown author";
+		const createdAt = payload.created_at ? new Date(payload.created_at).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" }) : "";
+		const url = payload.url || "";
+		const safeTitle = title.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+		const safeAuthor = author.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+		const safeUrl = url.startsWith("http://") || url.startsWith("https://") ? url : "";
+		const safeUrlDisplay = safeUrl.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+
+		if (safeUrl) {
+			return `
+				<div class="col-12 col-md-6">
+					<a class="post-card" href="${safeUrlDisplay}" target="_blank" rel="noopener noreferrer">
+						<div class="post-title">${safeTitle}</div>
+						<div class="post-meta"><i class="fa-solid fa-user me-1"></i>${safeAuthor}${createdAt ? " &middot; " + createdAt : ""}</div>
+						<div class="post-url"><i class="fa-solid fa-arrow-up-right-from-square me-1"></i>${safeUrlDisplay}</div>
+					</a>
+				</div>`;
+		}
+		return `
+				<div class="col-12 col-md-6">
+					<div class="post-card">
+						<div class="post-title">${safeTitle}</div>
+						<div class="post-meta"><i class="fa-solid fa-user me-1"></i>${safeAuthor}${createdAt ? " &middot; " + createdAt : ""}</div>
+					</div>
+				</div>`;
+	}).join("");
+}
+
+previewPostsBtn.addEventListener("click", () => {
+	renderPostPreviewModal();
+	new bootstrap.Modal(document.getElementById("postPreviewModal")).show();
+});
+
 async function refreshLatestPostPanel() {
 	try {
-		const endpoint = new URL(window.location.href);
+		const endpoint = new URL(POST_MONITOR_URL);
 		endpoint.searchParams.set("latestPost", "1");
 		endpoint.searchParams.set("_ts", String(Date.now()));
 
@@ -369,8 +415,25 @@ async function refreshLatestPostPanel() {
 		}
 
 		const data = await response.json();
+		const posts = Array.isArray(data.posts) ? data.posts : [];
+		cachedPosts = posts;
+		previewPostsBtn.disabled = posts.length === 0;
+		previewPostsBtn.textContent = "";
+		previewPostsBtn.innerHTML = `<i class="fa-solid fa-table-list me-1"></i>Preview Posts${posts.length > 0 ? " (" + posts.length + ")" : ""}`;
+
 		latestPostStatus.textContent = data.status || "No POST received yet";
-		latestPostPre.textContent = data.display || "No POST request received yet.";
+
+		if (posts.length === 0) {
+			latestPostPre.textContent = "No POST request received yet.";
+		} else {
+			latestPostPre.textContent = posts
+				.map((post, i) => {
+					const num = posts.length - i;
+					const header = `=== POST #${num} — ${post.receivedAt || "unknown time"} ===`;
+					return `${header}\n${JSON.stringify(post, null, 2)}`;
+				})
+				.join("\n\n");
+		}
 	} catch {
 		// Silent fail so periodic polling does not interrupt user interactions.
 	}
