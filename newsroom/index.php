@@ -68,6 +68,40 @@ if (($_GET["latestPost"] ?? "") === "1") {
 	<main class="container pb-5">
 		<section class="card card-soft p-3 p-md-4 mb-4 lazy-section">
 			<div class="row g-3 align-items-end">
+				
+				<div class="col-12">
+					<ul class="nav nav-tabs" id="testNavTabs" role="tablist">
+						<li class="nav-item">
+							<a class="nav-link active" aria-current="page" href="#" data-workstation-tab="newsroom" role="button">
+								<span class="stat-pill pill-primary">
+									<i class="fa-solid fa-rocket"></i> Newsroom Test
+								</span>
+							</a>
+						</li>
+						<li class="nav-item">
+							<a class="nav-link" href="#" data-workstation-tab="analytics" role="button">
+								<span class="stat-pill pill-secondary">
+									<i class="fa-solid fa-chart-line"></i> Data Analytics Test
+								</span>
+							</a>
+						</li>
+						<li class="nav-item">
+							<a class="nav-link" href="#" data-workstation-tab="api" role="button">
+								<span class="stat-pill pill-secondary">
+									<i class="fa-solid fa-chart-line"></i> API Endpoint Test
+								</span>
+							</a>
+						</li>
+						<li class="nav-item">
+							<a class="nav-link disabled" aria-disabled="true" role="button" tabindex="-1">
+								<span class="stat-pill pill-secondary">
+									<i class="fa-solid fa-chart-line"></i> Future Test
+								</span>
+							</a>
+						</li>
+					</ul>
+				</div>
+
 				<div class="col-12">
 					<label for="webhookUrl" class="form-label fw-semibold">
 						<i class="fa-solid fa-link me-1" style="color: var(--primary);"></i>
@@ -123,7 +157,17 @@ if (($_GET["latestPost"] ?? "") === "1") {
 			</div>
 		</section>
 
+		<section class="row g-4 my-4 lazy-section" id="workstation">
+			<div class="col-12">
+				<div id="workstationContent" class="card card-soft p-3 p-md-4">
+					Loading workstation details...
+				</div>
+			</div>
+
+		</section>
+
 		<section class="row g-4 lazy-section">
+
 			<div class="col-12 col-xl-4">
 				<div class="card card-soft h-100 p-3 p-md-4">
 					<div class="d-flex justify-content-between align-items-center mb-3">

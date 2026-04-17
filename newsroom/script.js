@@ -13,8 +13,110 @@ const latestPostPre = document.getElementById("latestPostPre");
 const totalCount = document.getElementById("totalCount");
 const successRate = document.getElementById("successRate");
 const historyBody = document.getElementById("historyBody");
+const workstationSection = document.getElementById("workstation");
+const workstationContent = document.getElementById("workstationContent");
+const workstationTabLinks = Array.from(document.querySelectorAll("#testNavTabs .nav-link[data-workstation-tab]"));
 
 const results = [];
+let activeWorkstationTab = "newsroom";
+let detectedIp = "Detecting...";
+
+function getResultBreakdown() {
+	const success = results.filter(item => item.ok).length;
+	const failed = results.length - success;
+
+	return { success, failed };
+}
+
+function renderWorkstationContent() {
+	if (!workstationContent) {
+		return;
+	}
+
+	const { success, failed } = getResultBreakdown();
+	const totalRequests = results.length;
+	const latestResult = results[results.length - 1] || null;
+
+	if (activeWorkstationTab === "analytics") {
+		workstationContent.innerHTML = `
+			<h2 class="h5 mb-3"><i class="fa-solid fa-chart-pie me-2" style="color: var(--secondary);"></i>Analytics Workstation</h2>
+			<div class="row g-3">
+				<div class="col-12 col-md-4"><div class="workstation-kpi"><div class="text-muted small">Total Requests</div><div class="fs-4 fw-bold">${totalRequests}</div></div></div>
+				<div class="col-12 col-md-4"><div class="workstation-kpi"><div class="text-muted small">Successful</div><div class="fs-4 fw-bold text-success">${success}</div></div></div>
+				<div class="col-12 col-md-4"><div class="workstation-kpi"><div class="text-muted small">Failed</div><div class="fs-4 fw-bold text-danger">${failed}</div></div></div>
+			</div>
+			<p class="small text-muted mb-0 mt-3">Run single or batch tests to update these metrics in real time.</p>
+		`;
+		return;
+	}
+
+	if (activeWorkstationTab === "api") {
+		const latestStatus = latestResult ? String(latestResult.statusCode) : "N/A";
+		const latestType = latestResult ? latestResult.responseType : "N/A";
+
+		workstationContent.innerHTML = `
+			<h2 class="h5 mb-3"><i class="fa-solid fa-plug-circle-check me-2" style="color: var(--primary);"></i>API Endpoint Workstation</h2>
+			<div class="row g-3">
+				<div class="col-12 col-md-6"><div class="workstation-kpi"><div class="text-muted small">Latest Status Code</div><div class="fs-4 fw-bold">${latestStatus}</div></div></div>
+				<div class="col-12 col-md-6"><div class="workstation-kpi"><div class="text-muted small">Latest Response Type</div><div class="fs-4 fw-bold">${latestType}</div></div></div>
+			</div>
+			<p class="small text-muted mb-0 mt-3">Use this mode to validate endpoint behavior and payload format consistency.</p>
+		`;
+		return;
+	}
+
+	workstationContent.innerHTML = `
+		<h2 class="h5 mb-3"><i class="fa-solid fa-newspaper me-2" style="color: var(--primary);"></i>Newsroom Workstation</h2>
+		<div class="row g-3">
+			<div class="col-12 col-md-6"><div class="workstation-kpi"><div class="text-muted small">Workstation IP</div><div class="fs-5 fw-semibold" id="workstationIp">${detectedIp}</div></div></div>
+			<div class="col-12 col-md-6"><div class="workstation-kpi"><div class="text-muted small">Latest POST Sync</div><div class="fs-6 fw-semibold">${latestPostStatus.textContent || "No POST received yet"}</div></div></div>
+		</div>
+		<p class="small text-muted mb-0 mt-3">Monitor incoming newsroom-style POST payloads while testing GET webhooks.</p>
+	`;
+}
+
+function setActiveWorkstationTab(tabName) {
+	activeWorkstationTab = tabName;
+	workstationTabLinks.forEach((link) => {
+		const isActive = link.dataset.workstationTab === tabName;
+		link.classList.toggle("active", isActive);
+		if (isActive) {
+			link.setAttribute("aria-current", "page");
+		} else {
+			link.removeAttribute("aria-current");
+		}
+	});
+	renderWorkstationContent();
+	if (workstationSection) {
+		workstationSection.classList.add("show");
+	}
+}
+
+function setupWorkstationTabs() {
+	workstationTabLinks.forEach((link) => {
+		link.addEventListener("click", (event) => {
+			event.preventDefault();
+			setActiveWorkstationTab(link.dataset.workstationTab || "newsroom");
+		});
+	});
+}
+
+async function detectWorkstationIp() {
+	try {
+		const response = await fetch("https://api.ipify.org?format=json", { method: "GET" });
+		if (!response.ok) {
+			return;
+		}
+		const data = await response.json();
+		if (typeof data.ip === "string" && data.ip.trim() !== "") {
+			detectedIp = data.ip.trim();
+			renderWorkstationContent();
+		}
+	} catch {
+		detectedIp = "Unavailable";
+		renderWorkstationContent();
+	}
+}
 
 const statusChart = new Chart(document.getElementById("statusChart"), {
 	type: "doughnut",
@@ -103,8 +205,7 @@ function detectResponseType(contentType, bodyText, isError) {
 }
 
 function updateChartsAndStats() {
-	const success = results.filter(item => item.ok).length;
-	const failed = results.length - success;
+	const { success, failed } = getResultBreakdown();
 
 	const typeCounts = {
 		JSON: 0,
@@ -133,6 +234,7 @@ function updateChartsAndStats() {
 	totalCount.textContent = String(results.length);
 	const rate = results.length ? Math.round((success / results.length) * 100) : 0;
 	successRate.textContent = rate + "%";
+	renderWorkstationContent();
 }
 
 function updateHistoryTable() {
@@ -437,6 +539,8 @@ async function refreshLatestPostPanel() {
 	} catch {
 		// Silent fail so periodic polling does not interrupt user interactions.
 	}
+
+	renderWorkstationContent();
 }
 
 testBtn.addEventListener("click", runWebhookTest);
@@ -452,6 +556,9 @@ webhookInput.addEventListener("keydown", (event) => {
 });
 
 setupLazySections();
+setupWorkstationTabs();
+setActiveWorkstationTab(activeWorkstationTab);
 loadWebhookUrlFromSession();
 refreshLatestPostPanel();
+detectWorkstationIp();
 setInterval(refreshLatestPostPanel, 3000);

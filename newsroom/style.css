@@ -137,6 +137,14 @@ body {
 	max-height: 260px;
 }
 
+.workstation-kpi {
+	background: #f3f7f8;
+	border: 1px solid #dde6e9;
+	border-radius: 0.75rem;
+	padding: 0.85rem 1rem;
+	height: 100%;
+}
+
 .post-card {
 	display: block;
 	text-decoration: none;
