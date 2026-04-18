@@ -21,6 +21,14 @@ const results = [];
 let activeWorkstationTab = "newsroom";
 let detectedIp = "Detecting...";
 
+function getN8nTestPageBaseUrl() {
+	const origin = window.location.origin;
+	const normalizedPath = window.location.pathname.replace(/index\.php$/i, "");
+	const pathWithTrailingSlash = normalizedPath.endsWith("/") ? normalizedPath : normalizedPath + "/";
+
+	return origin + pathWithTrailingSlash;
+}
+
 function getResultBreakdown() {
 	const success = results.filter(item => item.ok).length;
 	const failed = results.length - success;
@@ -36,10 +44,20 @@ function renderWorkstationContent() {
 	const { success, failed } = getResultBreakdown();
 	const totalRequests = results.length;
 	const latestResult = results[results.length - 1] || null;
+	const analyticsBaseUrl = getN8nTestPageBaseUrl();
+	const analyticsWebhookUrl = `${analyticsBaseUrl}?page=data-analytics&datasetcall=true`;
 
 	if (activeWorkstationTab === "analytics") {
 		workstationContent.innerHTML = `
 			<h2 class="h5 mb-3"><i class="fa-solid fa-chart-pie me-2" style="color: var(--secondary);"></i>Analytics Workstation</h2>
+			<div class="small mb-3">
+				<div><strong>URL:</strong> <code>${analyticsBaseUrl}</code></div>
+				<div><strong>Unique ID:</strong> <code>be164d70f0798dbb6fe80336dc268f82</code></div>
+				<div><strong>Webhook URL:</strong> <code>${analyticsWebhookUrl}</code></div>
+				<div><strong>Header auth name:</strong> <code>api_auth_user</code></div>
+				<div><strong>Header auth value:</strong> <code>j[vKYdY68H(:WFb</code></div>
+			</div>
+
 			<div class="row g-3">
 				<div class="col-12 col-md-4"><div class="workstation-kpi"><div class="text-muted small">Total Requests</div><div class="fs-4 fw-bold">${totalRequests}</div></div></div>
 				<div class="col-12 col-md-4"><div class="workstation-kpi"><div class="text-muted small">Successful</div><div class="fs-4 fw-bold text-success">${success}</div></div></div>
@@ -459,7 +477,7 @@ function setupLazySections() {
 	sections.forEach(section => observer.observe(section));
 }
 
-const POST_MONITOR_URL = "http://localhost:8888/practice/n8n/";
+const POST_MONITOR_URL = getN8nTestPageBaseUrl();
 const previewPostsBtn = document.getElementById("previewPostsBtn");
 let cachedPosts = [];
 

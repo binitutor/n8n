@@ -66,9 +66,8 @@ if (($_GET["latestPost"] ?? "") === "1") {
 	</header>
 
 	<main class="container pb-5">
-		<section class="card card-soft p-3 p-md-4 mb-4 lazy-section">
+		<section class="row g-4 my-4 lazy-section">
 			<div class="row g-3 align-items-end">
-				
 				<div class="col-12">
 					<ul class="nav nav-tabs" id="testNavTabs" role="tablist">
 						<li class="nav-item">
@@ -101,7 +100,21 @@ if (($_GET["latestPost"] ?? "") === "1") {
 						</li>
 					</ul>
 				</div>
+			</div>
+		</section>
 
+		<section class="row g-4 my-4 lazy-section" id="workstation">
+			<div class="col-12">
+				<div id="workstationContent" class="card card-soft p-3 p-md-4">
+					Loading workstation details...
+				</div>
+			</div>
+
+		</section>
+
+
+		<section class="card card-soft p-3 p-md-4 mb-4 lazy-section">
+			<div class="row g-3 align-items-end">
 				<div class="col-12">
 					<label for="webhookUrl" class="form-label fw-semibold">
 						<i class="fa-solid fa-link me-1" style="color: var(--primary);"></i>
@@ -155,15 +168,6 @@ if (($_GET["latestPost"] ?? "") === "1") {
 					</button>
 				</div>
 			</div>
-		</section>
-
-		<section class="row g-4 my-4 lazy-section" id="workstation">
-			<div class="col-12">
-				<div id="workstationContent" class="card card-soft p-3 p-md-4">
-					Loading workstation details...
-				</div>
-			</div>
-
 		</section>
 
 		<section class="row g-4 lazy-section">
