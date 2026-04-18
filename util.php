@@ -116,6 +116,238 @@ function handlePostRequest(string $latestPostFile): void
 	exit;
 }
 
+function handlePublicDatasetApiRequest(string $sqlDirectory, string $databaseName): void
+{
+	if (($_GET["page"] ?? "") !== "data-analytics") {
+		return;
+	}
+	if (($_GET["apidatasetcall"] ?? "") !== "true") {
+		return;
+	}
+
+	// Allow cross-origin GET requests from any external website or service.
+	header("Access-Control-Allow-Origin: *");
+	header("Access-Control-Allow-Methods: GET, OPTIONS");
+	header("Access-Control-Allow-Headers: Content-Type, Authorization, api_auth_user");
+
+	// Handle OPTIONS preflight immediately.
+	if (($_SERVER["REQUEST_METHOD"] ?? "GET") === "OPTIONS") {
+		http_response_code(204);
+		exit;
+	}
+
+	try {
+		$connection = connectMampMysql($databaseName);
+		$data = fetchHairSalonDataset($connection, $sqlDirectory);
+
+		header("Content-Type: application/json; charset=utf-8");
+		http_response_code(200);
+		echo json_encode([
+			"ok" => true,
+			"message" => "HairSalon dataset loaded.",
+			"endpoint" => "data-analytics",
+			"data" => $data,
+		], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+	} catch (Throwable $exception) {
+		header("Content-Type: application/json; charset=utf-8");
+		http_response_code(500);
+		echo json_encode([
+			"ok" => false,
+			"message" => $exception->getMessage(),
+		], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+	}
+	exit;
+}
+
+function handleSqlActionRequest(string $sqlDirectory, string $databaseName): void
+{
+	$action = $_GET["sqlAction"] ?? "";
+	if (!is_string($action) || $action === "") {
+		return;
+	}
+
+	$allowedActions = ["populate", "getJson", "clear"];
+	if (!in_array($action, $allowedActions, true)) {
+		respondSqlActionJson([
+			"ok" => false,
+			"message" => "Unsupported SQL action.",
+		], 400);
+	}
+
+	try {
+		$connection = connectMampMysql($databaseName);
+
+		if ($action === "populate") {
+			executeSqlScript($connection, "DROP TABLE IF EXISTS bt_hairsalon_appointments; DROP TABLE IF EXISTS bt_hairsalon_service_types; DROP TABLE IF EXISTS bt_hairsalon_service_hours;", "Reset HairSalon tables");
+			$files = [
+				"HAIRSALON_TIMESLOTS.SQL",
+				"HAIRSALON_SERVICES.SQL",
+				"HAIRSALON_APPOINTMENTS.SQL",
+			];
+
+			foreach ($files as $fileName) {
+				$sql = readSqlFileFromDirectory($sqlDirectory, $fileName);
+				executeSqlScript($connection, $sql, $fileName);
+			}
+
+			respondSqlActionJson([
+				"ok" => true,
+				"message" => "Database populated from SQL files.",
+				"files" => $files,
+				"data" => fetchHairSalonDataset($connection, $sqlDirectory),
+			]);
+		}
+
+		if ($action === "clear") {
+			$dataset = [
+				"service_hours" => [],
+				"service_types" => [],
+				"appointments" => [],
+			];
+
+			if (hairSalonTablesExist($connection)) {
+				$sql = readSqlFileFromDirectory($sqlDirectory, "CLEAR_HAIRSALON_DATA.SQL");
+				executeSqlScript($connection, $sql, "CLEAR_HAIRSALON_DATA.SQL");
+				$dataset = fetchHairSalonDataset($connection, $sqlDirectory);
+			}
+
+			respondSqlActionJson([
+				"ok" => true,
+				"message" => "HairSalon test data cleared.",
+				"files" => ["CLEAR_HAIRSALON_DATA.SQL"],
+				"data" => $dataset,
+			]);
+		}
+
+		respondSqlActionJson([
+			"ok" => true,
+			"message" => "HairSalon dataset loaded.",
+			"files" => ["GET_HAIRSALON_DATA.SQL"],
+			"data" => fetchHairSalonDataset($connection, $sqlDirectory),
+		]);
+	} catch (Throwable $exception) {
+		respondSqlActionJson([
+			"ok" => false,
+			"message" => $exception->getMessage(),
+		], 500);
+	}
+}
+
+function respondSqlActionJson(array $payload, int $statusCode = 200): void
+{
+	header("Content-Type: application/json; charset=utf-8");
+	http_response_code($statusCode);
+	echo json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+	exit;
+}
+
+function connectMampMysql(string $databaseName): mysqli
+{
+	$attempts = [
+		["host" => "127.0.0.1", "port" => 8889, "user" => "root", "password" => "root"],
+		["host" => "localhost", "port" => 8889, "user" => "root", "password" => "root"],
+		["host" => "127.0.0.1", "port" => 8889, "user" => "root", "password" => ""],
+		["host" => "localhost", "port" => 8889, "user" => "root", "password" => ""],
+		["host" => "127.0.0.1", "port" => 3306, "user" => "root", "password" => "root"],
+		["host" => "localhost", "port" => 3306, "user" => "root", "password" => "root"],
+		["host" => "127.0.0.1", "port" => 3306, "user" => "root", "password" => ""],
+		["host" => "localhost", "port" => 3306, "user" => "root", "password" => ""],
+	];
+
+	foreach ($attempts as $attempt) {
+		$connection = @new mysqli(
+			$attempt["host"],
+			$attempt["user"],
+			$attempt["password"],
+			$databaseName,
+			$attempt["port"]
+		);
+
+		if ($connection->connect_errno === 0) {
+			$connection->set_charset("utf8mb4");
+			return $connection;
+		}
+
+		$connection->close();
+	}
+
+	throw new RuntimeException("Could not connect to MySQL. Check that MAMP MySQL is running and the root credentials are correct.");
+}
+
+function readSqlFileFromDirectory(string $sqlDirectory, string $fileName): string
+{
+	$fullPath = rtrim($sqlDirectory, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . basename($fileName);
+	if (!is_readable($fullPath)) {
+		throw new RuntimeException("SQL file not found: " . basename($fileName));
+	}
+
+	$sql = file_get_contents($fullPath);
+	if (!is_string($sql) || trim($sql) === "") {
+		throw new RuntimeException("SQL file is empty: " . basename($fileName));
+	}
+
+	return $sql;
+}
+
+function hairSalonTablesExist(mysqli $connection): bool
+{
+	$tables = [
+		"bt_hairsalon_service_hours",
+		"bt_hairsalon_service_types",
+		"bt_hairsalon_appointments",
+	];
+
+	foreach ($tables as $tableName) {
+		$result = $connection->query("SHOW TABLES LIKE '" . $connection->real_escape_string($tableName) . "'");
+		if (!$result instanceof mysqli_result) {
+			return false;
+		}
+
+		$exists = $result->num_rows > 0;
+		$result->free();
+		if (!$exists) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
+function executeSqlScript(mysqli $connection, string $sql, string $label): array
+{
+	$resultSets = [];
+
+	if (!$connection->multi_query($sql)) {
+		throw new RuntimeException($label . " failed: " . $connection->error);
+	}
+
+	do {
+		$result = $connection->store_result();
+		if ($result instanceof mysqli_result) {
+			$resultSets[] = $result->fetch_all(MYSQLI_ASSOC);
+			$result->free();
+		}
+	} while ($connection->more_results() && $connection->next_result());
+
+	if ($connection->errno !== 0) {
+		throw new RuntimeException($label . " failed: " . $connection->error);
+	}
+
+	return $resultSets;
+}
+
+function fetchHairSalonDataset(mysqli $connection, string $sqlDirectory): array
+{
+	$sql = readSqlFileFromDirectory($sqlDirectory, "GET_HAIRSALON_DATA.SQL");
+	$resultSets = executeSqlScript($connection, $sql, "GET_HAIRSALON_DATA.SQL");
+
+	return [
+		"service_hours" => $resultSets[0] ?? [],
+		"service_types" => $resultSets[1] ?? [],
+		"appointments" => $resultSets[2] ?? [],
+	];
+}
+
 function respondLatestPostJson(string $status, string $display, ?array $allPosts): void
 {
 	header("Content-Type: application/json; charset=utf-8");

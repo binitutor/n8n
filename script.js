@@ -20,6 +20,29 @@ const workstationTabLinks = Array.from(document.querySelectorAll("#testNavTabs .
 const results = [];
 let activeWorkstationTab = "newsroom";
 let detectedIp = "Detecting...";
+let analyticsQueryResultText = "No query executed yet.";
+let analyticsQueryResultError = false;
+let analyticsDatasetCache = null;
+let analyticsActionRunning = false;
+
+const ANALYTICS_BUTTON_CONFIGS = {
+	populate: {
+		idle: '<i class="fa-solid fa-database me-2"></i>Populate Database With Test Data',
+		loading: '<i class="fa-solid fa-spinner fa-spin me-2"></i>Populating...'
+	},
+	getJson: {
+		idle: '<i class="fa-solid fa-code me-2"></i>Fetch Database JSON',
+		loading: '<i class="fa-solid fa-spinner fa-spin me-2"></i>Fetching...'
+	},
+	clear: {
+		idle: '<i class="fa-solid fa-trash me-2"></i>Clear Database Test Data',
+		loading: '<i class="fa-solid fa-spinner fa-spin me-2"></i>Clearing...'
+	},
+	export: {
+		idle: '<i class="fa-solid fa-file-arrow-down me-2"></i>Export Current Dataset JSON',
+		loading: '<i class="fa-solid fa-spinner fa-spin me-2"></i>Exporting...'
+	}
+};
 
 function getN8nTestPageBaseUrl() {
 	const origin = window.location.origin;
@@ -36,6 +59,213 @@ function getResultBreakdown() {
 	return { success, failed };
 }
 
+function buildDatasetSummaryHtml(data) {
+	if (!data) {
+		return '';
+	}
+
+	const hours = Array.isArray(data.service_hours) ? data.service_hours.length : 0;
+	const types = Array.isArray(data.service_types) ? data.service_types.length : 0;
+	const appts = Array.isArray(data.appointments) ? data.appointments.length : 0;
+
+	const statusCounts = { pending: 0, accepted: 0, rejected: 0, cancelled: 0 };
+	if (Array.isArray(data.appointments)) {
+		data.appointments.forEach(a => {
+			if (a.status && statusCounts[a.status] !== undefined) {
+				statusCounts[a.status]++;
+			}
+		});
+	}
+
+	return `
+		<div class="row g-2 mb-3" id="analytics_dataset_summary">
+			<div class="col-6 col-md-3">
+				<div class="workstation-kpi text-center">
+					<div class="text-muted small">Time Slots</div>
+					<div class="fs-4 fw-bold" style="color:var(--secondary)">${hours}</div>
+				</div>
+			</div>
+			<div class="col-6 col-md-3">
+				<div class="workstation-kpi text-center">
+					<div class="text-muted small">Services</div>
+					<div class="fs-4 fw-bold" style="color:var(--primary)">${types}</div>
+				</div>
+			</div>
+			<div class="col-6 col-md-3">
+				<div class="workstation-kpi text-center">
+					<div class="text-muted small">Appointments</div>
+					<div class="fs-4 fw-bold" style="color:var(--secondary)">${appts}</div>
+				</div>
+			</div>
+			<div class="col-6 col-md-3">
+				<div class="workstation-kpi text-center small">
+					<div class="text-muted small">Status Breakdown</div>
+					<div><span class="text-success fw-semibold">${statusCounts.accepted}</span> accepted</div>
+					<div><span class="text-warning fw-semibold">${statusCounts.pending}</span> pending</div>
+					<div><span class="text-danger fw-semibold">${statusCounts.rejected}</span> rejected</div>
+					<div><span class="text-muted fw-semibold">${statusCounts.cancelled}</span> cancelled</div>
+				</div>
+			</div>
+		</div>`;
+}
+
+function setAnalyticsQueryResult(value, isError = false, data = null) {
+	analyticsQueryResultText = value;
+	analyticsQueryResultError = isError;
+
+	const queryResult = document.getElementById("query_result");
+	const queryResultWrapper = document.getElementById("query_result_wrapper");
+	const summaryContainer = document.getElementById("analytics_summary_container");
+
+	if (queryResult) {
+		queryResult.textContent = analyticsQueryResultText;
+	}
+	if (queryResultWrapper) {
+		queryResultWrapper.classList.toggle("border", analyticsQueryResultError);
+		queryResultWrapper.classList.toggle("border-danger", analyticsQueryResultError);
+	}
+	if (summaryContainer) {
+		const effectiveData = data || analyticsDatasetCache;
+		summaryContainer.innerHTML = buildDatasetSummaryHtml(effectiveData);
+	}
+}
+
+function setAnalyticsButtonsLoading(action, isLoading) {
+	const allButtons = document.querySelectorAll("[data-analytics-action]");
+	allButtons.forEach(btn => {
+		const btnAction = btn.dataset.analyticsAction || "";
+		const config = ANALYTICS_BUTTON_CONFIGS[btnAction];
+		if (!config) {
+			return;
+		}
+		if (btnAction === action) {
+			btn.disabled = isLoading;
+			btn.innerHTML = isLoading ? config.loading : config.idle;
+		} else {
+			btn.disabled = isLoading;
+		}
+	});
+}
+
+function getSqlActionUrl(action) {
+	const endpoint = new URL(getN8nTestPageBaseUrl());
+	endpoint.searchParams.set("sqlAction", action);
+	endpoint.searchParams.set("_ts", String(Date.now()));
+	return endpoint;
+}
+
+async function runSqlAction(action) {
+	const endpoint = getSqlActionUrl(action);
+	const response = await fetch(endpoint.toString(), {
+		method: "POST",
+		headers: {
+			Accept: "application/json"
+		}
+	});
+
+	const bodyText = await response.text();
+	let payload = null;
+
+	try {
+		payload = JSON.parse(bodyText);
+	} catch {
+		throw new Error(bodyText || "Unexpected server response.");
+	}
+
+	if (!response.ok || !payload.ok) {
+		throw new Error(payload.message || "SQL action failed.");
+	}
+
+	analyticsDatasetCache = payload.data || null;
+	setAnalyticsQueryResult(JSON.stringify(payload, null, 2), false, payload.data || null);
+	return payload;
+}
+
+async function exportAnalyticsDataset() {
+	const payload = analyticsDatasetCache ? {
+		ok: true,
+		message: "Exported cached HairSalon dataset.",
+		data: analyticsDatasetCache
+	} : await runSqlAction("getJson");
+
+	const now = new Date();
+	const ts = now.getFullYear() +
+		String(now.getMonth() + 1).padStart(2, "0") +
+		String(now.getDate()).padStart(2, "0") + "_" +
+		String(now.getHours()).padStart(2, "0") +
+		String(now.getMinutes()).padStart(2, "0") +
+		String(now.getSeconds()).padStart(2, "0");
+	const filename = `bt_hairsalon_dataset_${ts}.json`;
+
+	const blob = new Blob([JSON.stringify(payload.data || {}, null, 2)], { type: "application/json" });
+	const downloadUrl = URL.createObjectURL(blob);
+	const link = document.createElement("a");
+	link.href = downloadUrl;
+	link.download = filename;
+	document.body.appendChild(link);
+	link.click();
+	link.remove();
+	URL.revokeObjectURL(downloadUrl);
+
+	const data = payload.data || {};
+	const counts = {
+		service_hours: Array.isArray(data.service_hours) ? data.service_hours.length : 0,
+		service_types: Array.isArray(data.service_types) ? data.service_types.length : 0,
+		appointments: Array.isArray(data.appointments) ? data.appointments.length : 0
+	};
+	setAnalyticsQueryResult(JSON.stringify({
+		ok: true,
+		message: `Current dataset exported as ${filename}.`,
+		counts
+	}, null, 2), false, data);
+}
+
+const ANALYTICS_ACTION_SUCCESS_MESSAGES = {
+	populate: "Database populated successfully.",
+	getJson: "Dataset loaded from database.",
+	clear: "Database test data cleared.",
+	export: "Dataset exported as JSON file."
+};
+
+async function handleAnalyticsAction(action) {
+	if (analyticsActionRunning) {
+		return;
+	}
+
+	analyticsActionRunning = true;
+	setAnalyticsButtonsLoading(action, true);
+	setAnalyticsQueryResult(`Running ${action}...`);
+
+	try {
+		if (action === "export") {
+			await exportAnalyticsDataset();
+		} else {
+			await runSqlAction(action);
+		}
+
+		const successMsg = ANALYTICS_ACTION_SUCCESS_MESSAGES[action] || "Done.";
+		Swal.fire({
+			icon: "success",
+			title: successMsg,
+			timer: 1800,
+			showConfirmButton: false,
+			toast: true,
+			position: "top-end"
+		});
+	} catch (error) {
+		const message = error instanceof Error ? error.message : "Unknown SQL action error.";
+		setAnalyticsQueryResult(message, true);
+		Swal.fire({
+			icon: "error",
+			title: "Action failed",
+			text: message
+		});
+	} finally {
+		analyticsActionRunning = false;
+		setAnalyticsButtonsLoading(action, false);
+	}
+}
+
 function renderWorkstationContent() {
 	if (!workstationContent) {
 		return;
@@ -46,25 +276,60 @@ function renderWorkstationContent() {
 	const latestResult = results[results.length - 1] || null;
 	const analyticsBaseUrl = getN8nTestPageBaseUrl();
 	const analyticsWebhookUrl = `${analyticsBaseUrl}?page=data-analytics&datasetcall=true`;
+	const analyticsWebhookUrlSecure = `${analyticsBaseUrl}?page=data-analytics&datasetcall=true&auth=1`;
 
 	if (activeWorkstationTab === "analytics") {
 		workstationContent.innerHTML = `
 			<h2 class="h5 mb-3"><i class="fa-solid fa-chart-pie me-2" style="color: var(--secondary);"></i>Analytics Workstation</h2>
-			<div class="small mb-3">
-				<div><strong>URL:</strong> <code>${analyticsBaseUrl}</code></div>
-				<div><strong>Unique ID:</strong> <code>be164d70f0798dbb6fe80336dc268f82</code></div>
-				<div><strong>Webhook URL:</strong> <code>${analyticsWebhookUrl}</code></div>
-				<div><strong>Header auth name:</strong> <code>api_auth_user</code></div>
-				<div><strong>Header auth value:</strong> <code>j[vKYdY68H(:WFb</code></div>
-			</div>
+			
 
 			<div class="row g-3">
-				<div class="col-12 col-md-4"><div class="workstation-kpi"><div class="text-muted small">Total Requests</div><div class="fs-4 fw-bold">${totalRequests}</div></div></div>
-				<div class="col-12 col-md-4"><div class="workstation-kpi"><div class="text-muted small">Successful</div><div class="fs-4 fw-bold text-success">${success}</div></div></div>
-				<div class="col-12 col-md-4"><div class="workstation-kpi"><div class="text-muted small">Failed</div><div class="fs-4 fw-bold text-danger">${failed}</div></div></div>
+				<div class="col-12 col-md-6">
+					<div class="small mb-3">
+						<div><strong>URL:</strong> <div class="workstation-kpi">${analyticsBaseUrl}</div></div>
+						<div><strong>Unique ID:</strong> <div class="workstation-kpi">be164d70f0798dbb6fe80336dc268f82</div></div>
+						<div><strong>Webhook URL:</strong> <div class="workstation-kpi">${analyticsWebhookUrl}</div></div>
+						<div><strong>Webhook URL (Secure):</strong> <div class="workstation-kpi">${analyticsWebhookUrlSecure}</div></div>
+						<div><strong>Header auth name:</strong> <div class="workstation-kpi">api_auth_user</div></div>
+						<div><strong>Header auth value:</strong> <div class="workstation-kpi">j[vKYdY68H(:WFb</div></div>
+					</div>
+					
+				</div>
+				<div class="col-12 col-md-6">
+					<div class="d-grid gap-2">
+						<button type="button" class="btn btn-primary" data-analytics-action="populate">
+							<i class="fa-solid fa-database me-2"></i>Populate Database With Test Data
+						</button>
+						<button type="button" class="btn btn-outline-primary" data-analytics-action="getJson">
+							<i class="fa-solid fa-code me-2"></i>Fetch Database JSON
+						</button>
+						<button type="button" class="btn btn-outline-danger" data-analytics-action="clear">
+							<i class="fa-solid fa-trash me-2"></i>Clear Database Test Data
+						</button>
+						<button type="button" class="btn btn-outline-secondary" data-analytics-action="export">
+							<i class="fa-solid fa-file-arrow-down me-2"></i>Export Current Dataset JSON
+						</button>
+						<button type="button" class="btn btn-primary" data-analytics-action="testApi">
+							<i class="fa-solid fa-plug me-2"></i>Test API Endpoint
+						</button>
+					</div>
+				</div>
 			</div>
+
+			<div id="analytics_summary_container" class="mt-3"></div>
+
+			<div class="row g-3 my-2">
+				<div class="col-12 col-md-12">
+					<div class="workstation-kpi" style="background-color: var(--primary-light);" id="query_result_wrapper">
+						<div class="text-muted small mb-1">Response</div>
+						<pre id="query_result" class="mb-0 small" style="white-space: pre-wrap; word-break: break-word; max-height: 260px; overflow-y: auto;"></pre>
+					</div>
+				</div>
+			</div>
+
 			<p class="small text-muted mb-0 mt-3">Run single or batch tests to update these metrics in real time.</p>
 		`;
+		setAnalyticsQueryResult(analyticsQueryResultText, analyticsQueryResultError);
 		return;
 	}
 
@@ -117,6 +382,18 @@ function setupWorkstationTabs() {
 			setActiveWorkstationTab(link.dataset.workstationTab || "newsroom");
 		});
 	});
+
+	if (workstationContent) {
+		workstationContent.addEventListener("click", (event) => {
+			const button = event.target.closest("[data-analytics-action]");
+			if (!button) {
+				return;
+			}
+
+			event.preventDefault();
+			void handleAnalyticsAction(button.dataset.analyticsAction || "");
+		});
+	}
 }
 
 async function detectWorkstationIp() {

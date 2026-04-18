@@ -81,7 +81,9 @@ INSERT INTO bt_hairsalon_service_hours (slot_date, slot_start, slot_end, is_acti
 ('2026-04-25', '10:30:00', '11:00:00', 1, NOW()),
 ('2026-04-25', '11:00:00', '11:30:00', 1, NOW()),
 ('2026-04-25', '11:30:00', '12:00:00', 1, NOW()),
-('2026-04-25', '13:00:00', '13:30:00', 1, NOW());
+('2026-04-25', '13:00:00', '13:30:00', 1, NOW()),
+('2026-04-25', '13:30:00', '14:00:00', 1, NOW()),
+('2026-04-25', '14:00:00', '14:30:00', 1, NOW());
 
 -- Verification query - view the populated table
 -- SELECT * FROM bt_hairsalon_service_hours ORDER BY slot_date, slot_start;

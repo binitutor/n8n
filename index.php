@@ -4,6 +4,9 @@ declare(strict_types=1);
 require_once __DIR__ . "/util.php";
 
 $latestPostFile = __DIR__ . "/latest_post.json";
+$sqlDirectory = __DIR__ . "/SQL";
+handlePublicDatasetApiRequest($sqlDirectory, "bt_hairsalon_test");
+handleSqlActionRequest($sqlDirectory, "bt_hairsalon_test");
 handlePostRequest($latestPostFile);
 
 $latestPostData = readLatestPostData($latestPostFile);
