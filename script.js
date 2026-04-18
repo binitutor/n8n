@@ -459,7 +459,7 @@ function setupLazySections() {
 	sections.forEach(section => observer.observe(section));
 }
 
-const POST_MONITOR_URL = "http://localhost:8888/practice/n8n/newsroom/";
+const POST_MONITOR_URL = "http://localhost:8888/practice/n8n/";
 const previewPostsBtn = document.getElementById("previewPostsBtn");
 let cachedPosts = [];
 

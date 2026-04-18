@@ -26,6 +26,10 @@ coverage/
 *.rar
 *.7z
 
+NOTE.MD
+result.txt
+
+
 # projects
-newsroom/latest_post.json
+latest_post.json
 
