@@ -116,6 +116,152 @@ function handlePostRequest(string $latestPostFile): void
 	exit;
 }
 
+function loadEnvConfig(string $envFilePath): array
+{
+	if (!is_readable($envFilePath)) {
+		return [];
+	}
+
+	$lines = file($envFilePath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+	if (!is_array($lines)) {
+		return [];
+	}
+
+	$config = [];
+	foreach ($lines as $line) {
+		$trimmed = trim($line);
+		if ($trimmed === "" || strpos($trimmed, "#") === 0) {
+			continue;
+		}
+
+		$parts = explode("=", $trimmed, 2);
+		if (count($parts) !== 2) {
+			continue;
+		}
+
+		$config[trim($parts[0])] = trim($parts[1]);
+	}
+
+	return $config;
+}
+
+function getHeaderValueByNames(array $headers, array $candidateNames): ?string
+{
+	$normalizedHeaders = [];
+	foreach ($headers as $name => $value) {
+		$normalizedHeaders[strtolower((string) $name)] = $value;
+	}
+
+	foreach ($candidateNames as $candidateName) {
+		$key = strtolower($candidateName);
+		if (array_key_exists($key, $normalizedHeaders) && is_string($normalizedHeaders[$key])) {
+			return $normalizedHeaders[$key];
+		}
+	}
+
+	return null;
+}
+
+function buildAuthHeaderCandidates(string $headerName): array
+{
+	$variants = [
+		$headerName,
+		str_replace("_", "-", $headerName),
+		str_replace("-", "_", $headerName),
+	];
+
+	$expanded = [];
+	foreach ($variants as $variant) {
+		$expanded[] = $variant;
+		$expanded[] = "X-" . ltrim($variant, "Xx-");
+	}
+
+	return array_values(array_unique($expanded));
+}
+
+function handleSecureDatasetApiRequest(string $sqlDirectory, string $databaseName, string $envFilePath): void
+{
+	if (($_GET["page"] ?? "") !== "data-analytics") {
+		return;
+	}
+	if (($_GET["datasetcall"] ?? "") !== "true") {
+		return;
+	}
+	if (($_GET["auth"] ?? "") !== "1") {
+		return;
+	}
+
+	header("Access-Control-Allow-Origin: *");
+	header("Access-Control-Allow-Methods: GET, OPTIONS");
+	header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Unique-Id, Unique-Id, api_auth_user");
+
+	if (($_SERVER["REQUEST_METHOD"] ?? "GET") === "OPTIONS") {
+		http_response_code(204);
+		exit;
+	}
+
+	$envConfig = loadEnvConfig($envFilePath);
+	$authHeaderName = $envConfig["HEADER_AUTH_USER"] ?? "";
+	$authHeaderValue = $envConfig["HEADER_AUTH_VALUE"] ?? "";
+	$expectedUniqueId = $envConfig["UNIQUE_ID"] ?? "";
+
+	if ($authHeaderName === "" || $authHeaderValue === "" || $expectedUniqueId === "") {
+		respondSecureDatasetJson([
+			"ok" => false,
+			"message" => "Secure dataset endpoint is not configured correctly in .env.",
+		], 500);
+	}
+
+	$headers = getRequestHeadersSafe();
+	$authHeaderCandidates = buildAuthHeaderCandidates($authHeaderName);
+	$providedAuthValue = getHeaderValueByNames($headers, $authHeaderCandidates);
+	$providedUniqueId = getHeaderValueByNames($headers, ["X-Unique-Id", "Unique-Id", "Unique_Id", "unique_id", "unique-id", "X-Api-Unique-Id"]);
+
+	if ($providedAuthValue === null || $providedUniqueId === null) {
+		respondSecureDatasetJson([
+			"ok" => false,
+			"message" => "Invalid request, include credentials.",
+			"requiredHeaders" => [
+				...$authHeaderCandidates,
+				"X-Unique-Id",
+			],
+			"receivedHeaders" => array_keys($headers),
+		], 401);
+	}
+
+	if (!hash_equals($authHeaderValue, $providedAuthValue) || !hash_equals($expectedUniqueId, $providedUniqueId)) {
+		respondSecureDatasetJson([
+			"ok" => false,
+			"message" => "Authentication failed.",
+		], 403);
+	}
+
+	try {
+		$connection = connectMampMysql($databaseName);
+		$data = fetchHairSalonDataset($connection, $sqlDirectory);
+
+		respondSecureDatasetJson([
+			"ok" => true,
+			"message" => "HairSalon dataset loaded.",
+			"endpoint" => "data-analytics-secure",
+			"data" => $data,
+		]);
+	} catch (Throwable $exception) {
+		respondSecureDatasetJson([
+			"ok" => false,
+			"message" => $exception->getMessage(),
+		], 500);
+	}
+}
+
+function respondSecureDatasetJson(array $payload, int $statusCode = 200): void
+{
+	header("Content-Type: application/json; charset=utf-8");
+	http_response_code($statusCode);
+	echo json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+	exit;
+}
+
 function handlePublicDatasetApiRequest(string $sqlDirectory, string $databaseName): void
 {
 	if (($_GET["page"] ?? "") !== "data-analytics") {
@@ -219,11 +365,32 @@ function handleSqlActionRequest(string $sqlDirectory, string $databaseName): voi
 			]);
 		}
 
+		$dataSelector = $_GET["data"] ?? "";
+		if (!is_string($dataSelector)) {
+			$dataSelector = "";
+		}
+		$dataSelector = trim($dataSelector);
+		$allowedDataSelectors = ["service_hours", "service_types", "appointments"];
+
+		if ($dataSelector !== "" && !in_array($dataSelector, $allowedDataSelectors, true)) {
+			respondSqlActionJson([
+				"ok" => false,
+				"message" => "Unsupported data filter. Use one of: service_hours, service_types, appointments.",
+			], 400);
+		}
+
+		$dataset = fetchHairSalonDataset($connection, $sqlDirectory);
+		if ($dataSelector !== "") {
+			$dataset = [
+				$dataSelector => $dataset[$dataSelector] ?? [],
+			];
+		}
+
 		respondSqlActionJson([
 			"ok" => true,
 			"message" => "HairSalon dataset loaded.",
 			"files" => ["GET_HAIRSALON_DATA.SQL"],
-			"data" => fetchHairSalonDataset($connection, $sqlDirectory),
+			"data" => $dataset,
 		]);
 	} catch (Throwable $exception) {
 		respondSqlActionJson([

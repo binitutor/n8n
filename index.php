@@ -5,6 +5,8 @@ require_once __DIR__ . "/util.php";
 
 $latestPostFile = __DIR__ . "/latest_post.json";
 $sqlDirectory = __DIR__ . "/SQL";
+$envFile = __DIR__ . "/.env";
+handleSecureDatasetApiRequest($sqlDirectory, "bt_hairsalon_test", $envFile);
 handlePublicDatasetApiRequest($sqlDirectory, "bt_hairsalon_test");
 handleSqlActionRequest($sqlDirectory, "bt_hairsalon_test");
 handlePostRequest($latestPostFile);
