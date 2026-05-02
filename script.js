@@ -348,6 +348,48 @@ function renderWorkstationContent() {
 		return;
 	}
 
+	if (activeWorkstationTab === "airtable") {
+		const latestType = latestResult ? latestResult.responseType : "N/A";
+
+		workstationContent.innerHTML = `
+			<h2 class="h5 mb-3"><i class="fa-solid fa-table me-2" style="color: var(--secondary);"></i>Airtable Workstation</h2>
+			<div class="row g-3">
+				<div class="col-12 col-md-6"><div class="workstation-kpi"><div class="text-muted small">Saved Webhook URL</div><div class="fs-6 fw-semibold">${webhookInput.value.trim() || "Not saved yet"}</div></div></div>
+				<div class="col-12 col-md-6"><div class="workstation-kpi"><div class="text-muted small">Latest Response Type</div><div class="fs-4 fw-bold">${latestType}</div></div></div>
+			</div>
+			<p class="small text-muted mb-0 mt-3">Use this tab while validating Airtable field mapping and response format.</p>
+		`;
+		return;
+	}
+
+	if (activeWorkstationTab === "discord") {
+		const latestStatus = latestResult ? String(latestResult.statusCode) : "N/A";
+
+		workstationContent.innerHTML = `
+			<h2 class="h5 mb-3"><i class="fa-brands fa-discord me-2" style="color: var(--secondary);"></i>Discord Workstation</h2>
+			<div class="row g-3">
+				<div class="col-12 col-md-6"><div class="workstation-kpi"><div class="text-muted small">Total Test Requests</div><div class="fs-4 fw-bold">${totalRequests}</div></div></div>
+				<div class="col-12 col-md-6"><div class="workstation-kpi"><div class="text-muted small">Latest Status Code</div><div class="fs-4 fw-bold">${latestStatus}</div></div></div>
+			</div>
+			<p class="small text-muted mb-0 mt-3">Use this tab for Discord notification workflow checks and delivery status validation.</p>
+		`;
+		return;
+	}
+
+	if (activeWorkstationTab === "telegram") {
+		const latestPostSync = latestPostStatus.textContent || "No POST received yet";
+
+		workstationContent.innerHTML = `
+			<h2 class="h5 mb-3"><i class="fa-brands fa-telegram me-2" style="color: var(--secondary);"></i>Telegram Workstation</h2>
+			<div class="row g-3">
+				<div class="col-12 col-md-6"><div class="workstation-kpi"><div class="text-muted small">Latest POST Sync</div><div class="fs-6 fw-semibold">${latestPostSync}</div></div></div>
+				<div class="col-12 col-md-6"><div class="workstation-kpi"><div class="text-muted small">Success vs Failed</div><div class="fs-6 fw-semibold"><span class="text-success">${success}</span> success / <span class="text-danger">${failed}</span> failed</div></div></div>
+			</div>
+			<p class="small text-muted mb-0 mt-3">Use this tab to monitor Telegram message workflow outcomes and POST sync recency.</p>
+		`;
+		return;
+	}
+
 	workstationContent.innerHTML = `
 		<h2 class="h5 mb-3"><i class="fa-solid fa-newspaper me-2" style="color: var(--primary);"></i>Newsroom Workstation</h2>
 		<div class="row g-3">

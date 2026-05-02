@@ -97,6 +97,27 @@ if (($_GET["latestPost"] ?? "") === "1") {
 							</a>
 						</li>
 						<li class="nav-item">
+							<a class="nav-link" href="#" data-workstation-tab="airtable" role="button">
+								<span class="stat-pill pill-secondary">
+									<i class="fa-solid fa-table"></i> Airtable Test
+								</span>
+							</a>
+						</li>
+						<li class="nav-item">
+							<a class="nav-link" href="#" data-workstation-tab="discord" role="button">
+								<span class="stat-pill pill-secondary">
+									<i class="fa-brands fa-discord"></i> Discord Test
+								</span>
+							</a>
+						</li>
+						<li class="nav-item">
+							<a class="nav-link" href="#" data-workstation-tab="telegram" role="button">
+								<span class="stat-pill pill-secondary">
+									<i class="fa-brands fa-telegram"></i> Telegram Test
+								</span>
+							</a>
+						</li>
+						<li class="nav-item">
 							<a class="nav-link disabled" aria-disabled="true" role="button" tabindex="-1">
 								<span class="stat-pill pill-secondary">
 									<i class="fa-solid fa-chart-line"></i> Future Test
