@@ -1,0 +1,503 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bths_appointments>
+    <appointment id="1">
+        <full_name>Sarah Johnson</full_name>
+        <email>sarah.johnson@email.com</email>
+        <phone>555-0101</phone>
+        <service_id>1</service_id>
+        <slot_id>1</slot_id>
+        <status>accepted</status>
+        <created_at>2026-04-10 10:30:00</created_at>
+        <updated_at>2026-04-10 11:15:00</updated_at>
+    </appointment>
+    <appointment id="2">
+        <full_name>Michael Chen</full_name>
+        <email>m.chen@email.com</email>
+        <phone>555-0102</phone>
+        <service_id>3</service_id>
+        <slot_id>2</slot_id>
+        <status>pending</status>
+        <created_at>2026-04-12 14:45:00</created_at>
+        <updated_at>2026-04-12 14:45:00</updated_at>
+    </appointment>
+    <appointment id="3">
+        <full_name>Emma Rodriguez</full_name>
+        <email>emma.r@email.com</email>
+        <phone>555-0103</phone>
+        <service_id>5</service_id>
+        <slot_id>3</slot_id>
+        <status>accepted</status>
+        <created_at>2026-04-11 09:20:00</created_at>
+        <updated_at>2026-04-11 10:00:00</updated_at>
+    </appointment>
+    <appointment id="4">
+        <full_name>James Wilson</full_name>
+        <email>jwilson@email.com</email>
+        <phone>555-0104</phone>
+        <service_id>2</service_id>
+        <slot_id>4</slot_id>
+        <status>rejected</status>
+        <created_at>2026-04-09 16:30:00</created_at>
+        <updated_at>2026-04-09 16:45:00</updated_at>
+    </appointment>
+    <appointment id="5">
+        <full_name>Lisa Anderson</full_name>
+        <email>lisa.a@email.com</email>
+        <phone>555-0105</phone>
+        <service_id>10</service_id>
+        <slot_id>5</slot_id>
+        <status>accepted</status>
+        <created_at>2026-04-13 11:00:00</created_at>
+        <updated_at>2026-04-13 11:30:00</updated_at>
+    </appointment>
+    <appointment id="6">
+        <full_name>David Martinez</full_name>
+        <email>dmartinez@email.com</email>
+        <phone>555-0106</phone>
+        <service_id>7</service_id>
+        <slot_id>6</slot_id>
+        <status>pending</status>
+        <created_at>2026-04-14 08:15:00</created_at>
+        <updated_at>2026-04-14 08:15:00</updated_at>
+    </appointment>
+    <appointment id="7">
+        <full_name>Jennifer Brown</full_name>
+        <email>j.brown@email.com</email>
+        <phone>555-0107</phone>
+        <service_id>11</service_id>
+        <slot_id>7</slot_id>
+        <status>accepted</status>
+        <created_at>2026-04-12 13:45:00</created_at>
+        <updated_at>2026-04-12 14:20:00</updated_at>
+    </appointment>
+    <appointment id="8">
+        <full_name>Robert Taylor</full_name>
+        <email>r.taylor@email.com</email>
+        <phone>555-0108</phone>
+        <service_id>4</service_id>
+        <slot_id>8</slot_id>
+        <status>cancelled</status>
+        <created_at>2026-04-10 15:30:00</created_at>
+        <updated_at>2026-04-11 09:00:00</updated_at>
+    </appointment>
+    <appointment id="9">
+        <full_name>Maria Garcia</full_name>
+        <email>maria.garcia@email.com</email>
+        <phone>555-0109</phone>
+        <service_id>6</service_id>
+        <slot_id>9</slot_id>
+        <status>accepted</status>
+        <created_at>2026-04-13 10:00:00</created_at>
+        <updated_at>2026-04-13 10:45:00</updated_at>
+    </appointment>
+    <appointment id="10">
+        <full_name>Christopher Lee</full_name>
+        <email>c.lee@email.com</email>
+        <phone>555-0110</phone>
+        <service_id>13</service_id>
+        <slot_id>10</slot_id>
+        <status>pending</status>
+        <created_at>2026-04-15 12:30:00</created_at>
+        <updated_at>2026-04-15 12:30:00</updated_at>
+    </appointment>
+    <appointment id="11">
+        <full_name>Patricia White</full_name>
+        <email>p.white@email.com</email>
+        <phone>555-0111</phone>
+        <service_id>9</service_id>
+        <slot_id>11</slot_id>
+        <status>rejected</status>
+        <created_at>2026-04-08 14:15:00</created_at>
+        <updated_at>2026-04-08 14:30:00</updated_at>
+    </appointment>
+    <appointment id="12">
+        <full_name>Daniel Harris</full_name>
+        <email>d.harris@email.com</email>
+        <phone>555-0112</phone>
+        <service_id>8</service_id>
+        <slot_id>12</slot_id>
+        <status>accepted</status>
+        <created_at>2026-04-11 16:00:00</created_at>
+        <updated_at>2026-04-11 16:45:00</updated_at>
+    </appointment>
+    <appointment id="13">
+        <full_name>Angela Clark</full_name>
+        <email>angela.clark@email.com</email>
+        <phone>555-0113</phone>
+        <service_id>1</service_id>
+        <slot_id>13</slot_id>
+        <status>accepted</status>
+        <created_at>2026-04-14 09:30:00</created_at>
+        <updated_at>2026-04-14 10:15:00</updated_at>
+    </appointment>
+    <appointment id="14">
+        <full_name>Kevin Lewis</full_name>
+        <email>k.lewis@email.com</email>
+        <phone>555-0114</phone>
+        <service_id>12</service_id>
+        <slot_id>14</slot_id>
+        <status>pending</status>
+        <created_at>2026-04-16 11:15:00</created_at>
+        <updated_at>2026-04-16 11:15:00</updated_at>
+    </appointment>
+    <appointment id="15">
+        <full_name>Jessica Hall</full_name>
+        <email>j.hall@email.com</email>
+        <phone>555-0115</phone>
+        <service_id>5</service_id>
+        <slot_id>15</slot_id>
+        <status>cancelled</status>
+        <created_at>2026-04-09 10:45:00</created_at>
+        <updated_at>2026-04-10 08:00:00</updated_at>
+    </appointment>
+    <appointment id="16">
+        <full_name>Daniel Young</full_name>
+        <email>d.young@email.com</email>
+        <phone>555-0116</phone>
+        <service_id>2</service_id>
+        <slot_id>16</slot_id>
+        <status>accepted</status>
+        <created_at>2026-04-13 15:30:00</created_at>
+        <updated_at>2026-04-13 16:00:00</updated_at>
+    </appointment>
+    <appointment id="17">
+        <full_name>Michelle Hernandez</full_name>
+        <email>m.hernandez@email.com</email>
+        <phone>555-0117</phone>
+        <service_id>10</service_id>
+        <slot_id>17</slot_id>
+        <status>pending</status>
+        <created_at>2026-04-16 13:45:00</created_at>
+        <updated_at>2026-04-16 13:45:00</updated_at>
+    </appointment>
+    <appointment id="18">
+        <full_name>Mark King</full_name>
+        <email>mark.king@email.com</email>
+        <phone>555-0118</phone>
+        <service_id>6</service_id>
+        <slot_id>18</slot_id>
+        <status>rejected</status>
+        <created_at>2026-04-07 17:00:00</created_at>
+        <updated_at>2026-04-07 17:20:00</updated_at>
+    </appointment>
+    <appointment id="19">
+        <full_name>Sandra Lopez</full_name>
+        <email>s.lopez@email.com</email>
+        <phone>555-0119</phone>
+        <service_id>15</service_id>
+        <slot_id>19</slot_id>
+        <status>accepted</status>
+        <created_at>2026-04-12 11:30:00</created_at>
+        <updated_at>2026-04-12 12:00:00</updated_at>
+    </appointment>
+    <appointment id="20">
+        <full_name>Steven Scott</full_name>
+        <email>s.scott@email.com</email>
+        <phone>555-0120</phone>
+        <service_id>3</service_id>
+        <slot_id>20</slot_id>
+        <status>accepted</status>
+        <created_at>2026-04-15 14:00:00</created_at>
+        <updated_at>2026-04-15 14:45:00</updated_at>
+    </appointment>
+    <appointment id="21">
+        <full_name>Dorothy Green</full_name>
+        <email>d.green@email.com</email>
+        <phone>555-0121</phone>
+        <service_id>11</service_id>
+        <slot_id>21</slot_id>
+        <status>pending</status>
+        <created_at>2026-04-17 10:30:00</created_at>
+        <updated_at>2026-04-17 10:30:00</updated_at>
+    </appointment>
+    <appointment id="22">
+        <full_name>Paul Adams</full_name>
+        <email>p.adams@email.com</email>
+        <phone>555-0122</phone>
+        <service_id>7</service_id>
+        <slot_id>22</slot_id>
+        <status>cancelled</status>
+        <created_at>2026-04-11 12:15:00</created_at>
+        <updated_at>2026-04-12 08:30:00</updated_at>
+    </appointment>
+    <appointment id="23">
+        <full_name>Barbara Nelson</full_name>
+        <email>b.nelson@email.com</email>
+        <phone>555-0123</phone>
+        <service_id>4</service_id>
+        <slot_id>23</slot_id>
+        <status>accepted</status>
+        <created_at>2026-04-14 16:00:00</created_at>
+        <updated_at>2026-04-14 16:45:00</updated_at>
+    </appointment>
+    <appointment id="24">
+        <full_name>Charles Carter</full_name>
+        <email>c.carter@email.com</email>
+        <phone>555-0124</phone>
+        <service_id>9</service_id>
+        <slot_id>24</slot_id>
+        <status>rejected</status>
+        <created_at>2026-04-06 15:45:00</created_at>
+        <updated_at>2026-04-06 16:00:00</updated_at>
+    </appointment>
+    <appointment id="25">
+        <full_name>Susan Mitchell</full_name>
+        <email>s.mitchell@email.com</email>
+        <phone>555-0125</phone>
+        <service_id>1</service_id>
+        <slot_id>25</slot_id>
+        <status>accepted</status>
+        <created_at>2026-04-16 09:15:00</created_at>
+        <updated_at>2026-04-16 10:00:00</updated_at>
+    </appointment>
+    <appointment id="26">
+        <full_name>Gary Roberts</full_name>
+        <email>g.roberts@email.com</email>
+        <phone>555-0126</phone>
+        <service_id>8</service_id>
+        <slot_id>26</slot_id>
+        <status>pending</status>
+        <created_at>2026-04-18 08:45:00</created_at>
+        <updated_at>2026-04-18 08:45:00</updated_at>
+    </appointment>
+    <appointment id="27">
+        <full_name>Nancy Phillips</full_name>
+        <email>n.phillips@email.com</email>
+        <phone>555-0127</phone>
+        <service_id>12</service_id>
+        <slot_id>27</slot_id>
+        <status>accepted</status>
+        <created_at>2026-04-13 14:30:00</created_at>
+        <updated_at>2026-04-13 15:15:00</updated_at>
+    </appointment>
+    <appointment id="28">
+        <full_name>Edward Campbell</full_name>
+        <email>e.campbell@email.com</email>
+        <phone>555-0128</phone>
+        <service_id>5</service_id>
+        <slot_id>28</slot_id>
+        <status>cancelled</status>
+        <created_at>2026-04-10 13:00:00</created_at>
+        <updated_at>2026-04-11 07:45:00</updated_at>
+    </appointment>
+    <appointment id="29">
+        <full_name>Betty Parker</full_name>
+        <email>b.parker@email.com</email>
+        <phone>555-0129</phone>
+        <service_id>2</service_id>
+        <slot_id>29</slot_id>
+        <status>accepted</status>
+        <created_at>2026-04-15 11:00:00</created_at>
+        <updated_at>2026-04-15 11:45:00</updated_at>
+    </appointment>
+    <appointment id="30">
+        <full_name>Ronald Evans</full_name>
+        <email>r.evans@email.com</email>
+        <phone>555-0130</phone>
+        <service_id>13</service_id>
+        <slot_id>30</slot_id>
+        <status>pending</status>
+        <created_at>2026-04-19 12:00:00</created_at>
+        <updated_at>2026-04-19 12:00:00</updated_at>
+    </appointment>
+    <appointment id="31">
+        <full_name>Carol Edwards</full_name>
+        <email>carol.edwards@email.com</email>
+        <phone>555-0131</phone>
+        <service_id>10</service_id>
+        <slot_id>31</slot_id>
+        <status>rejected</status>
+        <created_at>2026-04-05 16:30:00</created_at>
+        <updated_at>2026-04-05 16:45:00</updated_at>
+    </appointment>
+    <appointment id="32">
+        <full_name>Anthony Collins</full_name>
+        <email>a.collins@email.com</email>
+        <phone>555-0132</phone>
+        <service_id>6</service_id>
+        <slot_id>32</slot_id>
+        <status>accepted</status>
+        <created_at>2026-04-12 10:15:00</created_at>
+        <updated_at>2026-04-12 11:00:00</updated_at>
+    </appointment>
+    <appointment id="33">
+        <full_name>Diane Stewart</full_name>
+        <email>d.stewart@email.com</email>
+        <phone>555-0133</phone>
+        <service_id>11</service_id>
+        <slot_id>33</slot_id>
+        <status>accepted</status>
+        <created_at>2026-04-17 14:00:00</created_at>
+        <updated_at>2026-04-17 14:45:00</updated_at>
+    </appointment>
+    <appointment id="34">
+        <full_name>Francisco Sanchez</full_name>
+        <email>f.sanchez@email.com</email>
+        <phone>555-0134</phone>
+        <service_id>3</service_id>
+        <slot_id>34</slot_id>
+        <status>pending</status>
+        <created_at>2026-04-20 09:30:00</created_at>
+        <updated_at>2026-04-20 09:30:00</updated_at>
+    </appointment>
+    <appointment id="35">
+        <full_name>Katherine Morris</full_name>
+        <email>k.morris@email.com</email>
+        <phone>555-0135</phone>
+        <service_id>7</service_id>
+        <slot_id>35</slot_id>
+        <status>cancelled</status>
+        <created_at>2026-04-08 11:45:00</created_at>
+        <updated_at>2026-04-09 08:00:00</updated_at>
+    </appointment>
+    <appointment id="36">
+        <full_name>Zachary Rogers</full_name>
+        <email>z.rogers@email.com</email>
+        <phone>555-0136</phone>
+        <service_id>9</service_id>
+        <slot_id>36</slot_id>
+        <status>accepted</status>
+        <created_at>2026-04-14 15:30:00</created_at>
+        <updated_at>2026-04-14 16:15:00</updated_at>
+    </appointment>
+    <appointment id="37">
+        <full_name>Brenda Morgan</full_name>
+        <email>b.morgan@email.com</email>
+        <phone>555-0137</phone>
+        <service_id>1</service_id>
+        <slot_id>37</slot_id>
+        <status>rejected</status>
+        <created_at>2026-04-04 14:00:00</created_at>
+        <updated_at>2026-04-04 14:15:00</updated_at>
+    </appointment>
+    <appointment id="38">
+        <full_name>Samuel Peterson</full_name>
+        <email>s.peterson@email.com</email>
+        <phone>555-0138</phone>
+        <service_id>4</service_id>
+        <slot_id>38</slot_id>
+        <status>accepted</status>
+        <created_at>2026-04-16 13:00:00</created_at>
+        <updated_at>2026-04-16 13:45:00</updated_at>
+    </appointment>
+    <appointment id="39">
+        <full_name>Catherine Cooper</full_name>
+        <email>c.cooper@email.com</email>
+        <phone>555-0139</phone>
+        <service_id>15</service_id>
+        <slot_id>39</slot_id>
+        <status>pending</status>
+        <created_at>2026-04-21 10:00:00</created_at>
+        <updated_at>2026-04-21 10:00:00</updated_at>
+    </appointment>
+    <appointment id="40">
+        <full_name>Ryan Reed</full_name>
+        <email>ryan.reed@email.com</email>
+        <phone>555-0140</phone>
+        <service_id>8</service_id>
+        <slot_id>40</slot_id>
+        <status>accepted</status>
+        <created_at>2026-04-13 11:15:00</created_at>
+        <updated_at>2026-04-13 12:00:00</updated_at>
+    </appointment>
+    <appointment id="41">
+        <full_name>Gloria Bell</full_name>
+        <email>g.bell@email.com</email>
+        <phone>555-0141</phone>
+        <service_id>12</service_id>
+        <slot_id>41</slot_id>
+        <status>cancelled</status>
+        <created_at>2026-04-09 09:30:00</created_at>
+        <updated_at>2026-04-10 07:00:00</updated_at>
+    </appointment>
+    <appointment id="42">
+        <full_name>Dennis May</full_name>
+        <email>d.may@email.com</email>
+        <phone>555-0142</phone>
+        <service_id>2</service_id>
+        <slot_id>42</slot_id>
+        <status>accepted</status>
+        <created_at>2026-04-18 15:45:00</created_at>
+        <updated_at>2026-04-18 16:30:00</updated_at>
+    </appointment>
+    <appointment id="43">
+        <full_name>Shirley Dawson</full_name>
+        <email>s.dawson@email.com</email>
+        <phone>555-0143</phone>
+        <service_id>5</service_id>
+        <slot_id>43</slot_id>
+        <status>pending</status>
+        <created_at>2026-04-22 11:30:00</created_at>
+        <updated_at>2026-04-22 11:30:00</updated_at>
+    </appointment>
+    <appointment id="44">
+        <full_name>Jerry Cross</full_name>
+        <email>j.cross@email.com</email>
+        <phone>555-0144</phone>
+        <service_id>10</service_id>
+        <slot_id>44</slot_id>
+        <status>rejected</status>
+        <created_at>2026-04-03 17:15:00</created_at>
+        <updated_at>2026-04-03 17:30:00</updated_at>
+    </appointment>
+    <appointment id="45">
+        <full_name>Evelyn Nunez</full_name>
+        <email>e.nunez@email.com</email>
+        <phone>555-0145</phone>
+        <service_id>6</service_id>
+        <slot_id>45</slot_id>
+        <status>accepted</status>
+        <created_at>2026-04-15 10:00:00</created_at>
+        <updated_at>2026-04-15 10:45:00</updated_at>
+    </appointment>
+    <appointment id="46">
+        <full_name>Lawrence Brennan</full_name>
+        <email>l.brennan@email.com</email>
+        <phone>555-0146</phone>
+        <service_id>11</service_id>
+        <slot_id>46</slot_id>
+        <status>accepted</status>
+        <created_at>2026-04-19 13:30:00</created_at>
+        <updated_at>2026-04-19 14:15:00</updated_at>
+    </appointment>
+    <appointment id="47">
+        <full_name>Mildred Flores</full_name>
+        <email>m.flores@email.com</email>
+        <phone>555-0147</phone>
+        <service_id>7</service_id>
+        <slot_id>47</slot_id>
+        <status>pending</status>
+        <created_at>2026-04-23 09:00:00</created_at>
+        <updated_at>2026-04-23 09:00:00</updated_at>
+    </appointment>
+    <appointment id="48">
+        <full_name>Steven Whitley</full_name>
+        <email>s.whitley@email.com</email>
+        <phone>555-0148</phone>
+        <service_id>9</service_id>
+        <slot_id>48</slot_id>
+        <status>cancelled</status>
+        <created_at>2026-04-12 14:45:00</created_at>
+        <updated_at>2026-04-13 08:15:00</updated_at>
+    </appointment>
+    <appointment id="49">
+        <full_name>Helen Guzman</full_name>
+        <email>h.guzman@email.com</email>
+        <phone>555-0149</phone>
+        <service_id>1</service_id>
+        <slot_id>49</slot_id>
+        <status>accepted</status>
+        <created_at>2026-04-17 11:45:00</created_at>
+        <updated_at>2026-04-17 12:30:00</updated_at>
+    </appointment>
+    <appointment id="50">
+        <full_name>Dennis Garrett</full_name>
+        <email>d.garrett@email.com</email>
+        <phone>555-0150</phone>
+        <service_id>13</service_id>
+        <slot_id>50</slot_id>
+        <status>rejected</status>
+        <created_at>2026-04-02 16:00:00</created_at>
+        <updated_at>2026-04-02 16:20:00</updated_at>
+    </appointment>
+</bths_appointments>
