@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BT HairSalon Services</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --line: #e5e7eb;
+      --accent: #ff6602;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+    .wrap {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 18px;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.04);
+    }
+    h1 { margin: 0 0 8px; font-size: 1.4rem; }
+    p { margin: 0 0 14px; color: var(--muted); }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; min-width: 760px; }
+    th, td {
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      padding: 10px;
+      font-size: 0.92rem;
+    }
+    th {
+      background: #fff7f1;
+      color: #8a3d00;
+      position: sticky;
+      top: 0;
+    }
+    .price { font-weight: 700; }
+    .error { color: #b91c1c; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>BT HairSalon Services</h1>
+      <p id="meta">Loading services from <code>../XML/bths_services.xml</code>...</p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Service Name</th>
+              <th>Price</th>
+              <th>Created At</th>
+              <th>Updated At</th>
+            </tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    async function loadServices() {
+      const rows = document.getElementById("rows");
+      const meta = document.getElementById("meta");
+      try {
+        const response = await fetch("../XML/bths_services.xml", { cache: "no-store" });
+        if (!response.ok) {
+          throw new Error("HTTP " + response.status);
+        }
+
+        const xmlText = await response.text();
+        const xml = new DOMParser().parseFromString(xmlText, "application/xml");
+        const items = Array.from(xml.querySelectorAll("service"));
+
+        rows.innerHTML = items.map((item) => {
+          const id = item.getAttribute("id") || "";
+          const serviceName = item.querySelector("service_name")?.textContent || "";
+          const price = item.querySelector("price")?.textContent || "";
+          const createdAt = item.querySelector("created_at")?.textContent || "";
+          const updatedAt = item.querySelector("updated_at")?.textContent || "";
+
+          return `
+            <tr>
+              <td>${id}</td>
+              <td>${serviceName}</td>
+              <td class="price">$${price}</td>
+              <td>${createdAt}</td>
+              <td>${updatedAt}</td>
+            </tr>`;
+        }).join("");
+
+        meta.textContent = `Loaded ${items.length} service records.`;
+      } catch (error) {
+        rows.innerHTML = `<tr><td colspan="5" class="error">Failed to load XML: ${error.message}</td></tr>`;
+        meta.textContent = "Could not load XML file.";
+      }
+    }
+
+    loadServices();
+  </script>
+</body>
+</html>
