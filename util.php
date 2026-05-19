@@ -527,3 +527,226 @@ function respondLatestPostJson(string $status, string $display, ?array $allPosts
 	], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
 	exit;
 }
+
+function connectMysqlWithEnv(string $envFilePath): mysqli
+{
+	$envConfig = loadEnvConfig($envFilePath);
+	$host = trim((string) ($envConfig["DB_HOST"] ?? ""));
+	$portRaw = trim((string) ($envConfig["DB_PORT"] ?? ""));
+	$user = trim((string) ($envConfig["DB_USER"] ?? ""));
+	$password = (string) ($envConfig["DB_PASSWORD"] ?? "");
+
+	if ($host === "" || $user === "") {
+		throw new RuntimeException("Missing required .env database credentials. Required: DB_HOST and DB_USER.");
+	}
+
+	if ($portRaw === "" || !ctype_digit($portRaw)) {
+		throw new RuntimeException("Missing or invalid DB_PORT in .env.");
+	}
+
+	$port = (int) $portRaw;
+	if ($port < 1 || $port > 65535) {
+		throw new RuntimeException("DB_PORT must be between 1 and 65535.");
+	}
+
+	// Try to connect with specified credentials
+	$connection = @new mysqli($host, $user, $password, "", $port);
+
+	if ($connection->connect_errno !== 0) {
+		throw new RuntimeException("MySQL connection failed: " . $connection->connect_error);
+	}
+
+	$connection->set_charset("utf8mb4");
+	return $connection;
+}
+
+function getMysqlDatabases(mysqli $connection): array
+{
+	$databases = [];
+	$result = $connection->query("SHOW DATABASES");
+
+	if (!$result instanceof mysqli_result) {
+		throw new RuntimeException("Failed to list databases: " . $connection->error);
+	}
+
+	while ($row = $result->fetch_assoc()) {
+		$dbName = $row["Database"] ?? "";
+		// Skip system databases
+		if (!in_array($dbName, ["information_schema", "mysql", "performance_schema", "sys"], true)) {
+			$databases[] = $dbName;
+		}
+	}
+
+	sort($databases);
+	return $databases;
+}
+
+function testDatabaseAccess(mysqli $connection, string $databaseName): array
+{
+	// Select the database
+	if (!$connection->select_db($databaseName)) {
+		return [
+			"readable" => false,
+			"writable" => false,
+			"error" => "Cannot select database: " . $connection->error,
+		];
+	}
+
+	$canRead = false;
+	$canWrite = false;
+
+	// Test read access by querying INFORMATION_SCHEMA
+	$result = $connection->query("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = '" . $connection->real_escape_string($databaseName) . "' LIMIT 1");
+	if ($result instanceof mysqli_result || $result === true) {
+		$canRead = true;
+	}
+
+	// Test write access by creating and dropping a test table
+	$testTableName = "test_access_" . bin2hex(random_bytes(4));
+	if ($connection->query("CREATE TEMPORARY TABLE `$testTableName` (id INT)")) {
+		$canWrite = true;
+		$connection->query("DROP TEMPORARY TABLE `$testTableName`");
+	}
+
+	return [
+		"readable" => $canRead,
+		"writable" => $canWrite,
+		"error" => null,
+	];
+}
+
+function handleMysqlStatusRequest(string $envFilePath): void
+{
+	if (($_GET["mysqlStatus"] ?? "") !== "1") {
+		return;
+	}
+
+	header("Content-Type: application/json; charset=utf-8");
+
+	// Check if .env file exists
+	$envFileExists = is_readable($envFilePath);
+
+	if (!$envFileExists) {
+		http_response_code(200);
+		echo json_encode([
+			"ok" => false,
+			"envFileExists" => false,
+			"message" => ".env file not found or not readable.",
+			"connectionStatus" => "not_attempted",
+		], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+		exit;
+	}
+
+	// Check if .env has necessary credentials
+	$envConfig = loadEnvConfig($envFilePath);
+	$hasRequiredCredentials = !empty($envConfig) &&
+		isset($envConfig["DB_HOST"]) &&
+		isset($envConfig["DB_USER"]);
+
+	if (!$hasRequiredCredentials || count($envConfig) === 0) {
+		http_response_code(200);
+		echo json_encode([
+			"ok" => false,
+			"envFileExists" => true,
+			"envFileEmpty" => true,
+			"message" => ".env file is missing required database credentials (DB_HOST, DB_USER).",
+			"connectionStatus" => "not_attempted",
+		], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+		exit;
+	}
+
+	// Attempt MySQL connection
+	$connectionStatus = "failed";
+	$databases = [];
+	$mysqlVersion = "Unknown";
+
+	try {
+		$connection = connectMysqlWithEnv($envFilePath);
+		$connectionStatus = "success";
+
+		// Get MySQL version
+		$versionResult = $connection->query("SELECT VERSION() as version");
+		$versionRow = $versionResult ? $versionResult->fetch_assoc() : null;
+		$mysqlVersion = $versionRow["version"] ?? "Unknown";
+
+		// Get list of databases
+		$databases = getMysqlDatabases($connection);
+
+		$connection->close();
+
+		http_response_code(200);
+		echo json_encode([
+			"ok" => true,
+			"envFileExists" => true,
+			"envFileEmpty" => false,
+			"message" => "MySQL connection successful.",
+			"connectionStatus" => $connectionStatus,
+			"mysqlVersion" => $mysqlVersion,
+			"databases" => $databases,
+			"envCredentials" => array_keys($envConfig),
+		], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+		exit;
+
+	} catch (Throwable $exception) {
+		http_response_code(200);
+		echo json_encode([
+			"ok" => false,
+			"envFileExists" => true,
+			"envFileEmpty" => false,
+			"message" => "MySQL connection failed: " . $exception->getMessage(),
+			"connectionStatus" => $connectionStatus,
+			"error" => $exception->getMessage(),
+		], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+		exit;
+	}
+}
+
+function handleTestDatabaseAccessRequest(string $envFilePath): void
+{
+	if (($_GET["testDbAccess"] ?? "") !== "1") {
+		return;
+	}
+
+	$databaseName = $_GET["dbName"] ?? "";
+
+	if (empty($databaseName)) {
+		header("Content-Type: application/json; charset=utf-8");
+		http_response_code(400);
+		echo json_encode([
+			"ok" => false,
+			"error" => "Database name (dbName) is required.",
+		], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+		exit;
+	}
+
+	header("Content-Type: application/json; charset=utf-8");
+	$envConfig = loadEnvConfig($envFilePath);
+	$testedUser = (string) ($envConfig["DB_USER"] ?? "");
+
+	try {
+		$connection = connectMysqlWithEnv($envFilePath);
+		$accessTest = testDatabaseAccess($connection, $databaseName);
+		$connection->close();
+
+		http_response_code(200);
+		echo json_encode([
+			"ok" => true,
+			"database" => $databaseName,
+			"testedUser" => $testedUser,
+			"readable" => $accessTest["readable"],
+			"writable" => $accessTest["writable"],
+			"error" => $accessTest["error"],
+		], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+		exit;
+
+	} catch (Throwable $exception) {
+		http_response_code(200);
+		echo json_encode([
+			"ok" => false,
+			"database" => $databaseName,
+			"testedUser" => $testedUser,
+			"error" => $exception->getMessage(),
+		], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+		exit;
+	}
+}

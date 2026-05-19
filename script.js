@@ -18,12 +18,25 @@ const workstationContent = document.getElementById("workstationContent");
 const workstationTabLinks = Array.from(document.querySelectorAll("#testNavTabs .nav-link[data-workstation-tab]"));
 
 const results = [];
-let activeWorkstationTab = "newsroom";
+let activeWorkstationTab = "mysql";
 let detectedIp = "Detecting...";
 let analyticsQueryResultText = "No query executed yet.";
 let analyticsQueryResultError = false;
 let analyticsDatasetCache = null;
 let analyticsActionRunning = false;
+let mysqlStatusLoaded = false;
+let mysqlStatusLoading = false;
+let mysqlStatusMarkup = `
+	<div class="col-12">
+		<div class="workstation-kpi" style="background-color: var(--primary-light);">
+			<div class="text-muted small mb-2">Status</div>
+			<div class="spinner-border spinner-border-sm me-2" role="status">
+				<span class="visually-hidden">Loading...</span>
+			</div>
+			<span class="small">Checking MySQL connection and .env configuration...</span>
+		</div>
+	</div>
+`;
 
 const ANALYTICS_BUTTON_CONFIGS = {
 	populate: {
@@ -278,6 +291,19 @@ function renderWorkstationContent() {
 	const analyticsWebhookUrl = `${analyticsBaseUrl}?page=data-analytics&datasetcall=true`;
 	const analyticsWebhookUrlSecure = `${analyticsBaseUrl}?page=data-analytics&datasetcall=true&auth=1`;
 
+	if (activeWorkstationTab === "mysql") {
+		workstationContent.innerHTML = `
+			<h2 class="h5 mb-3"><i class="fa-solid fa-database me-2" style="color: var(--primary);"></i>MySQL Workstation</h2>
+			<div id="mysql_status_container" class="row g-3">
+				${mysqlStatusMarkup}
+			</div>
+		`;
+		if (!mysqlStatusLoaded && !mysqlStatusLoading) {
+			void loadMysqlStatus();
+		}
+		return;
+	}
+
 	if (activeWorkstationTab === "analytics") {
 		workstationContent.innerHTML = `
 			<h2 class="h5 mb-3"><i class="fa-solid fa-chart-pie me-2" style="color: var(--secondary);"></i>Analytics Workstation</h2>
@@ -427,6 +453,16 @@ function setupWorkstationTabs() {
 
 	if (workstationContent) {
 		workstationContent.addEventListener("click", (event) => {
+			const mysqlButton = event.target.closest(".test-db-btn");
+			if (mysqlButton) {
+				event.preventDefault();
+				const dbName = mysqlButton.dataset.db || "";
+				if (dbName !== "") {
+					void testDatabaseAccess(dbName, mysqlButton);
+				}
+				return;
+			}
+
 			const button = event.target.closest("[data-analytics-action]");
 			if (!button) {
 				return;
@@ -453,6 +489,226 @@ async function detectWorkstationIp() {
 		detectedIp = "Unavailable";
 		renderWorkstationContent();
 	}
+}
+
+async function loadMysqlStatus() {
+	mysqlStatusLoading = true;
+
+	try {
+		const baseUrl = getN8nTestPageBaseUrl();
+		const response = await fetch(`${baseUrl}?mysqlStatus=1`, {
+			method: "GET",
+			headers: { "Accept": "application/json" }
+		});
+
+		const data = await response.json();
+
+		if (data.envFileExists === false) {
+			mysqlStatusMarkup = `
+				<div class="col-12">
+					<div class="alert alert-warning" role="alert">
+						<h5 class="alert-heading"><i class="fa-solid fa-triangle-exclamation me-2"></i>⚠️ .env File Not Found</h5>
+						<p class="mb-0">The <code>.env</code> file is missing or not readable.</p>
+						<small class="text-muted d-block mt-2">Create a <code>.env</code> file in the root directory with your MySQL credentials.</small>
+					</div>
+				</div>
+			`;
+			mysqlStatusLoaded = true;
+			if (activeWorkstationTab === "mysql") {
+				renderWorkstationContent();
+			}
+			return;
+		}
+
+		if (data.envFileEmpty === true) {
+			mysqlStatusMarkup = `
+				<div class="col-12">
+					<div class="alert alert-warning" role="alert">
+						<h5 class="alert-heading"><i class="fa-solid fa-triangle-exclamation me-2"></i>⚠️ Missing Database Credentials</h5>
+						<p class="mb-1">The <code>.env</code> file is missing required database credentials.</p>
+						<p class="mb-0 small"><strong>Required variables:</strong> DB_HOST, DB_USER, DB_PASSWORD (optional)</p>
+					</div>
+				</div>
+			`;
+			mysqlStatusLoaded = true;
+			if (activeWorkstationTab === "mysql") {
+				renderWorkstationContent();
+			}
+			return;
+		}
+
+		if (data.connectionStatus === "success") {
+			const databases = data.databases || [];
+			let databasesHtml = "";
+
+			if (databases.length === 0) {
+				databasesHtml = `
+					<div class="col-12">
+						<div class="alert alert-info" role="alert">
+							<i class="fa-solid fa-info-circle me-2"></i>No user databases found on this MySQL server.
+						</div>
+					</div>
+				`;
+			} else {
+				databasesHtml = `
+					<div class="col-12">
+						<div class="mb-3">
+							<h6 class="mb-3"><i class="fa-solid fa-database me-2"></i>Available Databases</h6>
+							<div class="list-group" style="max-height: 400px; overflow-y: auto;">
+								${databases.map(db => `
+									<div class="list-group-item d-flex justify-content-between align-items-center" data-db="${db}">
+										<div class="d-flex align-items-center flex-grow-1">
+											<i class="fa-solid fa-circle me-2" style="color: #ccc; font-size: 0.5rem;"></i>
+											<span class="db-name">${escapeHtml(db)}</span>
+											<div class="db-status ms-3 small text-muted" style="display: none;">
+												<span class="db-read-status"></span> | <span class="db-write-status"></span>
+											</div>
+										</div>
+										<button type="button" class="btn btn-sm btn-outline-primary test-db-btn" data-db="${db}">
+											<i class="fa-solid fa-vial-circle-check me-1"></i>Test
+										</button>
+									</div>
+								`).join("")}
+							</div>
+						</div>
+					</div>
+				`;
+			}
+
+			mysqlStatusMarkup = `
+				<div class="col-12">
+					<div class="alert alert-success" role="alert">
+						<h5 class="alert-heading"><i class="fa-solid fa-circle-check me-2"></i>✓ MySQL Connection Successful</h5>
+						<div class="row g-3 mt-2">
+							<div class="col-6 col-md-3">
+								<div class="workstation-kpi text-center">
+									<div class="text-muted small">MySQL Version</div>
+									<div class="fs-6 fw-semibold">${data.mysqlVersion || 'Unknown'}</div>
+								</div>
+							</div>
+							<div class="col-6 col-md-3">
+								<div class="workstation-kpi text-center">
+									<div class="text-muted small">Total Databases</div>
+									<div class="fs-6 fw-semibold">${databases.length}</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				${databasesHtml}
+			`;
+			mysqlStatusLoaded = true;
+			if (activeWorkstationTab === "mysql") {
+				renderWorkstationContent();
+			}
+
+			return;
+		}
+
+		// Connection failed
+		mysqlStatusMarkup = `
+			<div class="col-12">
+				<div class="alert alert-danger" role="alert">
+					<h5 class="alert-heading"><i class="fa-solid fa-circle-xmark me-2"></i>✗ MySQL Connection Failed</h5>
+					<p class="mb-2"><strong>Error:</strong></p>
+					<pre class="small" style="background: rgba(0,0,0,0.1); padding: 10px; border-radius: 4px; max-height: 200px; overflow-y: auto; margin-bottom: 0;">${data.error || data.message || 'Unknown error'}</pre>
+					<small class="text-muted d-block mt-2">Verify that:</small>
+					<ul class="small text-muted mb-0 mt-1">
+						<li>MySQL server is running (MAMP/WAMP)</li>
+						<li>Credentials in .env file are correct</li>
+						<li>Host and port settings are correct</li>
+					</ul>
+				</div>
+			</div>
+		`;
+		mysqlStatusLoaded = true;
+		if (activeWorkstationTab === "mysql") {
+			renderWorkstationContent();
+		}
+
+	} catch (error) {
+		mysqlStatusMarkup = `
+			<div class="col-12">
+				<div class="alert alert-danger" role="alert">
+					<h5 class="alert-heading"><i class="fa-solid fa-circle-xmark me-2"></i>✗ Error Checking MySQL Status</h5>
+					<p class="mb-0 small">${error?.message || 'Failed to fetch MySQL status'}</p>
+				</div>
+			</div>
+		`;
+		mysqlStatusLoaded = true;
+		if (activeWorkstationTab === "mysql") {
+			renderWorkstationContent();
+		}
+	} finally {
+		mysqlStatusLoading = false;
+	}
+}
+
+async function testDatabaseAccess(dbName, buttonElement) {
+	const baseUrl = getN8nTestPageBaseUrl();
+	const listItem = buttonElement.closest(".list-group-item");
+	const statusDiv = listItem.querySelector(".db-status");
+	const readSpan = statusDiv.querySelector(".db-read-status");
+	const writeSpan = statusDiv.querySelector(".db-write-status");
+
+	// Show loading state
+	buttonElement.disabled = true;
+	buttonElement.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i>Testing...';
+	statusDiv.style.display = "block";
+	readSpan.innerHTML = '<i class="fa-solid fa-hourglass-half"></i> Testing...';
+	writeSpan.textContent = '';
+
+	try {
+		const response = await fetch(`${baseUrl}?testDbAccess=1&dbName=${encodeURIComponent(dbName)}`, {
+			method: "GET",
+			headers: { "Accept": "application/json" }
+		});
+
+		const data = await response.json();
+		const testedUser = typeof data.testedUser === "string" ? data.testedUser.trim() : "";
+		const testedUserHtml = testedUser !== ""
+			? `<span class="text-muted">User: <code>${escapeHtml(testedUser)}</code></span>`
+			: '<span class="text-muted">User: <code>unknown</code></span>';
+
+		if (data.ok) {
+			const readIcon = data.readable ? '<i class="fa-solid fa-circle-check" style="color: #28a745;"></i> Readable' : '<i class="fa-solid fa-circle-xmark" style="color: #dc3545;"></i> Not Readable';
+			const writeIcon = data.writable ? '<i class="fa-solid fa-circle-check" style="color: #28a745;"></i> Writable' : '<i class="fa-solid fa-circle-xmark" style="color: #dc3545;"></i> Not Writable';
+
+			readSpan.innerHTML = readIcon;
+			writeSpan.innerHTML = `${writeIcon} | ${testedUserHtml}`;
+
+			// Update checkmark
+			const circleIcon = listItem.querySelector("i.fa-circle");
+			if (data.readable && data.writable) {
+				circleIcon.style.color = "#28a745";
+				circleIcon.className = "fa-solid fa-circle-check";
+			} else if (data.readable) {
+				circleIcon.style.color = "#ffc107";
+				circleIcon.className = "fa-solid fa-circle-minus";
+			} else {
+				circleIcon.style.color = "#dc3545";
+				circleIcon.className = "fa-solid fa-circle-xmark";
+			}
+		} else {
+			readSpan.innerHTML = '<i class="fa-solid fa-circle-xmark" style="color: #dc3545;"></i> Error';
+			writeSpan.innerHTML = testedUserHtml;
+		}
+
+		buttonElement.disabled = false;
+		buttonElement.innerHTML = '<i class="fa-solid fa-vial-circle-check me-1"></i>Test';
+
+	} catch (error) {
+		readSpan.innerHTML = '<i class="fa-solid fa-circle-xmark" style="color: #dc3545;"></i> Error';
+		writeSpan.textContent = error?.message || 'Failed to test';
+		buttonElement.disabled = false;
+		buttonElement.innerHTML = '<i class="fa-solid fa-vial-circle-check me-1"></i>Test';
+	}
+}
+
+function escapeHtml(text) {
+	const div = document.createElement('div');
+	div.textContent = text;
+	return div.innerHTML;
 }
 
 const statusChart = new Chart(document.getElementById("statusChart"), {

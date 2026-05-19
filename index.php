@@ -6,6 +6,8 @@ require_once __DIR__ . "/util.php";
 $latestPostFile = __DIR__ . "/latest_post.json";
 $sqlDirectory = __DIR__ . "/SQL";
 $envFile = __DIR__ . "/.env";
+handleMysqlStatusRequest($envFile);
+handleTestDatabaseAccessRequest($envFile);
 handleSecureDatasetApiRequest($sqlDirectory, "bt_hairsalon_test", $envFile);
 handlePublicDatasetApiRequest($sqlDirectory, "bt_hairsalon_test");
 handleSqlActionRequest($sqlDirectory, "bt_hairsalon_test");
@@ -76,9 +78,16 @@ if (($_GET["latestPost"] ?? "") === "1") {
 				<div class="col-12">
 					<ul class="nav nav-tabs" id="testNavTabs" role="tablist">
 						<li class="nav-item">
-							<a class="nav-link active" aria-current="page" href="#" data-workstation-tab="newsroom" role="button">
+							<a class="nav-link active" aria-current="page" href="#" data-workstation-tab="mysql" role="button">
 								<span class="stat-pill pill-primary">
-									<i class="fa-solid fa-rocket"></i> Newsroom Test
+									<i class="fa-solid fa-database"></i> MySQL
+								</span>
+							</a>
+						</li>
+						<li class="nav-item">
+							<a class="nav-link" aria-current="page" href="#" data-workstation-tab="newsroom" role="button">
+								<span class="stat-pill pill-primary">
+									<i class="fa-solid fa-rocket"></i> Newsroom
 								</span>
 							</a>
 						</li>
